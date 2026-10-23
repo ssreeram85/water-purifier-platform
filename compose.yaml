@@ -1,0 +1,89 @@
+name: water-purifier-platform
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: platform_admin
+      POSTGRES_PASSWORD: platform_admin
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./deployment/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports: ["5433:5432"]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U platform_admin"], interval: 5s, timeout: 5s, retries: 20 }
+  kafka:
+    image: apache/kafka:4.1.0
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports: ["9092:9092"]
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4
+    command: start-dev --import-realm
+    environment: { KC_BOOTSTRAP_ADMIN_USERNAME: admin, KC_BOOTSTRAP_ADMIN_PASSWORD: admin }
+    volumes: ["./deployment/keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro"]
+    ports: ["8180:8080"]
+  redis:
+    image: redis:8-alpine
+    ports: ["6379:6379"]
+  object-storage:
+    image: chrislusf/seaweedfs:latest
+    command: mini -dir=/data -ip=object-storage -s3.port=8333
+    environment: { AWS_ACCESS_KEY_ID: admin, AWS_SECRET_ACCESS_KEY: change-this-local-secret, S3_BUCKET: water-purifier-files }
+    ports: ["8333:8333", "9333:9333", "8888:8888"]
+    volumes: ["object-storage-data:/data"]
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports: ["1025:1025", "8025:8025"]
+  customer-service:
+    build: ./services/customer-service
+    environment: { DB_URL: jdbc:postgresql://postgres:5432/customer_db, DB_USER: customer_user, DB_PASSWORD: customer_pass, KAFKA_BOOTSTRAP: kafka:9092, ISSUER_URI: http://keycloak:8080/realms/water-purifier }
+    depends_on: { postgres: { condition: service_healthy } }
+    ports: ["8081:8081"]
+  support-service:
+    build: ./services/support-service
+    environment: { DB_URL: jdbc:postgresql://postgres:5432/support_db, DB_USER: support_user, DB_PASSWORD: support_pass, KAFKA_BOOTSTRAP: kafka:9092, ISSUER_URI: http://keycloak:8080/realms/water-purifier }
+    depends_on: { postgres: { condition: service_healthy } }
+    ports: ["8082:8082"]
+  inventory-service:
+    build: ./services/inventory-service
+    environment: { DB_URL: jdbc:postgresql://postgres:5432/inventory_db, DB_USER: inventory_user, DB_PASSWORD: inventory_pass, KAFKA_BOOTSTRAP: kafka:9092, ISSUER_URI: http://keycloak:8080/realms/water-purifier }
+    depends_on: { postgres: { condition: service_healthy } }
+    ports: ["8083:8083"]
+  notification-service:
+    build: ./services/notification-service
+    environment: { DB_URL: jdbc:postgresql://postgres:5432/notification_db, DB_USER: notification_user, DB_PASSWORD: notification_pass, KAFKA_BOOTSTRAP: kafka:9092, ISSUER_URI: http://keycloak:8080/realms/water-purifier, SMTP_HOST: mailpit }
+    depends_on: { postgres: { condition: service_healthy } }
+    ports: ["8084:8084"]
+  reporting-service:
+    build: ./services/reporting-service
+    environment: { DB_URL: jdbc:postgresql://postgres:5432/reporting_db, DB_USER: reporting_user, DB_PASSWORD: reporting_pass, KAFKA_BOOTSTRAP: kafka:9092, ISSUER_URI: http://keycloak:8080/realms/water-purifier }
+    depends_on: { postgres: { condition: service_healthy } }
+    ports: ["8085:8085"]
+  api-gateway:
+    build: ./gateway
+    environment: { ISSUER_URI: http://keycloak:8080/realms/water-purifier }
+    depends_on: [customer-service, support-service, inventory-service, notification-service, reporting-service]
+    ports: ["8080:8080"]
+  frontend:
+    build: ./frontend
+    depends_on: [api-gateway]
+    ports: ["5173:80"]
+  prometheus:
+    image: prom/prometheus:v3.6.0
+    volumes: ["./deployment/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro"]
+    ports: ["9090:9090"]
+  grafana:
+    image: grafana/grafana:12.2.0
+    environment: { GF_SECURITY_ADMIN_PASSWORD: admin }
+    volumes: ["./deployment/grafana/provisioning:/etc/grafana/provisioning:ro"]
+    ports: ["3000:3000"]
+volumes: { postgres-data: {}, object-storage-data: {} }

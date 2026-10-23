@@ -1,0 +1,8 @@
+FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:latest
+
+USER root
+ENV TZ=Asia/Kuwait
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+USER 185

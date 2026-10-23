@@ -1,0 +1,32 @@
+server:
+  port: 8081
+spring:
+  application:
+    name: customer-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/customer_db}
+    username: ${DB_USER:customer_user}
+    password: ${DB_PASSWORD:customer_pass}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${ISSUER_URI:http://localhost:8180/realms/water-purifier}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+logging:
+  level:
+    org.springframework.boot.autoconfigure.jdbc: DEBUG
+    com.zaxxer.hikari: DEBUG

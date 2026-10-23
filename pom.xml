@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<modelVersion>4.0.0</modelVersion>
+    <groupId>com.waterpurifier</groupId>
+    <artifactId>water-purifier-platform</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.1</version>
+        <relativePath/>
+    </parent>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <java.version>21</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.targer>21</maven.compiler.targer>
+        <docker-maven-plugin.version>0.47.0</docker-maven-plugin.version>
+        <docker.image.prefix>aquacloud</docker.image.prefix>
+        <docker.base.image>ssreeram28/base-image:1.0.0</docker.base.image>
+        <skipTests>false</skipTests>
+        <docker.skip>false</docker.skip>
+    </properties>
+    <modules>
+        <module>docker</module>
+        <module>services/customer-service</module>
+        <module>services/support-service</module>
+        <module>services/inventory-service</module>
+        <module>services/notification-service</module>
+        <module>services/reporting-service</module>
+        <module>gateway</module>
+    </modules>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>oss.sonatype.org</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <version>${docker-maven-plugin.version}</version>
+                <configuration>
+                    <skip>${docker.skip}</skip>
+                    <images>
+                        <image>
+                            <name>${docker.image.prefix}/${project.artifactId}:${project.version}</name>
+                            <build>
+                                <dockerFile>${project.basedir}/Dockerfile</dockerFile>
+                                <args>
+                                    <JAR_FILE>${project.artifactId}--${project.version}.jar</JAR_FILE>
+                                    <BASE_IMAGE>${docker.base.image}</BASE_IMAGE>
+                                </args>
+                            </build>
+                        </image>
+                    </images>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

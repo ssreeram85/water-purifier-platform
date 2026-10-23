@@ -1,0 +1,20 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - { id: customer, uri: http://customer-service:8081, predicates: [Path=/api/customer/**] }
+            - { id: support, uri: http://support-service:8082, predicates: [Path=/api/support/**] }
+            - { id: inventory, uri: http://inventory-service:8083, predicates: [Path=/api/inventory/**] }
+            - { id: notification, uri: http://notification-service:8084, predicates: [Path=/api/notification/**] }
+            - { id: reporting, uri: http://reporting-service:8085, predicates: [Path=/api/reporting/**] }
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus

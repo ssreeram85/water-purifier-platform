@@ -1,0 +1,27 @@
+server:
+  port: 8085
+spring:
+  application:
+    name: reporting-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/reporting_db}
+    username: ${DB_USER:reporting_user}
+    password: ${DB_PASSWORD:reporting_pass}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${ISSUER_URI:http://localhost:8180/realms/water-purifier}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus

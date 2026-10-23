@@ -1,0 +1,10 @@
+asyncapi: 3.0.0
+info: { title: Water Purifier Domain Events, version: 1.0.0 }
+channels:
+  complaintEvents:
+    address: water.support.complaints.v1
+  inventoryEvents:
+    address: water.inventory.movements.v1
+  customerEvents:
+    address: water.customers.v1
+operations: {}
