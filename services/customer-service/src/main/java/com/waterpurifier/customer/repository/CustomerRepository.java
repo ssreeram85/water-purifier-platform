@@ -22,15 +22,7 @@ public interface CustomerRepository extends JpaRepository<CustomerEntity, UUID> 
 
     boolean existsByEmailIgnoreCaseAndIdNot(String email, UUID id);
 
-    @Query("""
-            select c from Customer c
-            where :search is null
-               or lower(concat(c.firstName, ' ', c.lastName)) like lower(concat('%', :search, '%'))
-               or lower(coalesce(c.email, '')) like lower(concat('%', :search, '%'))
-               or c.mobileNumber like concat('%', :search, '%')
-               or lower(c.customerCode) like lower(concat('%', :search, '%'))
-            """)
-    Page<CustomerEntity> search(@Param("search") String search, Pageable pageable);
+
 
 
 }

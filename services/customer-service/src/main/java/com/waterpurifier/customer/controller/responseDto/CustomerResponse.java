@@ -25,6 +25,7 @@ public record CustomerResponse(
         String notes,
         Long version,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        String fullName
         ) {}
 
